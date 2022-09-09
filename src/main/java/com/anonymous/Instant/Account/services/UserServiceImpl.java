@@ -22,16 +22,16 @@ public class UserServiceImpl implements UserService{
 
 
     @Override
-    public UserResponse register(User user) {
-        Optional<User> optionalUser = userRepository.findByEmail(user.getEmail());
+    public UserResponse register(User registerRequest) {
+        Optional<User> optionalUser = userRepository.findByEmail(registerRequest.getEmail());
         if(optionalUser.isPresent()) throw new InstantAccountException("Email Already Exist");
-        if(!user.getPassword().equals(user.getConfirmPassword())) throw new IncorrectDetailsException("Password Mismatch");
+        if(!registerRequest.getPassword().equals(registerRequest.getConfirmPassword())) throw new IncorrectDetailsException("Password Mismatch");
         User instant_account_user = new User();
-        modelMapper.map(user, instant_account_user);
-        userRepository.save(user);
+        modelMapper.map(registerRequest, instant_account_user);
+        userRepository.save(registerRequest);
         UserResponse userResponse = new UserResponse();
-        userResponse.setEmail(user.getEmail());
-        String fullName = user.getFirstName()+" "+user.getLastName();
+        userResponse.setEmail(registerRequest.getEmail());
+        String fullName = registerRequest.getFirstName()+" "+ registerRequest.getLastName();
         userResponse.setFullName(fullName);
         userResponse.setMessage("Account Successfully Created");
 
