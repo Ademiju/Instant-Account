@@ -52,6 +52,7 @@ public class UserServiceImpl implements UserService{
         User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow(() -> new InstantAccountException("Incorrect login details"));
         if (!loginRequest.getPassword().equals(user.getPassword()))
             throw new IncorrectDetailsException("Incorrect login details");
+        if(user.isLoggedIn()) throw new InstantAccountException("You are already logged in");
         user.setLoggedIn(true);
         userRepository.save(user);
         return "Successfully Logged In";
