@@ -7,6 +7,7 @@ import com.anonymous.Instant.Account.datas.repositories.UserRepository;
 import com.anonymous.Instant.Account.dtos.responses.AccountResponse;
 import com.anonymous.Instant.Account.exceptions.IncorrectDetailsException;
 import com.anonymous.Instant.Account.exceptions.InstantAccountException;
+import com.anonymous.Instant.Account.exceptions.MoneyException;
 import com.mashape.unirest.http.HttpResponse;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
@@ -14,11 +15,13 @@ import org.apache.tomcat.util.json.JSONParser;
 import org.apache.tomcat.util.json.ParseException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.Random;
 
+@Service
 public class AccountServiceImpl implements AccountService{
     @Autowired
     UserRepository userRepository;
@@ -27,6 +30,8 @@ public class AccountServiceImpl implements AccountService{
     AccountRepository accountRepository;
     @Override
     public AccountResponse createAccount(String bvn, String email) throws UnirestException, ParseException {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new InstantAccountException("User not found"));
+        if(!user.isLoggedIn()) throw  new InstantAccountException("You must be logged in");
             Unirest.setTimeouts(0, 0);
             HttpResponse<String> response = Unirest.post("https://fsi.ng/api/bvnr/GetSingleBVN")
                     .header("Accept", "application/json")
@@ -38,7 +43,6 @@ public class AccountServiceImpl implements AccountService{
             if(response.getStatus()!=200) throw new IncorrectDetailsException("Incorrect BVN number");
             JSONParser parser = new JSONParser(response.getBody());
             JSONObject jsonObject = (JSONObject)parser.parse();
-            User user = userRepository.findByEmail(email).orElseThrow(() -> new InstantAccountException("User not found"));
             Account account = new Account();
             account.setBvn(bvn);
             String fullName = jsonObject.get("firstName").toString()+jsonObject.get("firstName").toString();
@@ -75,12 +79,16 @@ public class AccountServiceImpl implements AccountService{
     @Override
     public String makeDeposit(String accountNumber, int depositAmount) {
         Account accountFromRepository = accountRepository.findByAccountNumber(accountNumber).orElseThrow(()-> new IncorrectDetailsException("Invalid account number"));
+        User user = userRepository.findByEmail(accountFromRepository.getEmail()).get();
+        if(!user.isLoggedIn()) throw  new InstantAccountException("You must be logged in");
         BigDecimal accountBalance = accountFromRepository.getBalance();
         BigDecimal deposit = BigDecimal.valueOf(depositAmount);
-        if(depositAmount < 0) throw new RuntimeException("Deposit Amount not valid");
+        if(depositAmount < 0) throw new MoneyException("Deposit Amount not valid");
         BigDecimal newAccountBalance = accountBalance.add(deposit);
         accountFromRepository.setBalance(newAccountBalance);
-        accountRepository.save(accountFromRepository);
+        Account savedAccount = accountRepository.save(accountFromRepository);
+        user.setAccount(savedAccount);
+        userRepository.save(user);
         String amount = String.valueOf(depositAmount);
         return accountNumber+"Successfully credited with "+amount;
     }
