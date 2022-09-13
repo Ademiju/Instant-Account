@@ -1,12 +1,10 @@
 package com.anonymous.Instant.Account.controllers;
 
-import com.anonymous.Instant.Account.datas.models.User;
 import com.anonymous.Instant.Account.dtos.responses.ApiResponse;
 import com.anonymous.Instant.Account.exceptions.IncorrectDetailsException;
 import com.anonymous.Instant.Account.exceptions.InstantAccountException;
 import com.anonymous.Instant.Account.exceptions.MoneyException;
 import com.anonymous.Instant.Account.services.AccountService;
-import com.anonymous.Instant.Account.services.UserService;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import org.apache.tomcat.util.json.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
